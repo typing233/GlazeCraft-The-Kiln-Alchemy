@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GlazeCraft - 作品展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #eaeaea;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .share-container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .share-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .share-header h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #e94560, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        
+        .share-header p {
+            color: #aaa;
+        }
+        
+        .work-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (max-width: 600px) {
+            .work-display {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .texture-preview {
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #8b7355, #a0826d);
+            background-size: cover;
+            background-position: center;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .work-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .work-info h2 {
+            color: #feca57;
+            font-size: 1.5rem;
+        }
+        
+        .info-item {
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .info-item label {
+            display: block;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .info-item value {
+            color: #eaeaea;
+            font-weight: 500;
+        }
+        
+        .recipe-info {
+            margin-top: 1rem;
+        }
+        
+        .recipe-info h3 {
+            color: #ff6b6b;
+            margin-bottom: 0.75rem;
+        }
+        
+        .ingredient-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .ingredient-tag {
+            padding: 0.25rem 0.75rem;
+            background: rgba(233, 69, 96, 0.2);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: #ff6b6b;
+        }
+        
+        .firing-stats {
+            margin-top: 1rem;
+        }
+        
+        .firing-stats h3 {
+            color: #ff6b6b;
+            margin-bottom: 0.75rem;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #feca57;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 0.25rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #eaeaea;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #aaa;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #feca57;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+        }
+        
+        .footer a {
+            color: #ff6b6b;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="share-container">
+        <div class="share-header">
+            <h1>🏺 GlazeCraft</h1>
+            <p>窑变炼金术 - 数字陶艺作品</p>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>加载作品中...</p>
+        </div>
+        
+        <div id="work-content" style="display: none;">
+            <div class="work-display">
+                <div class="texture-preview" id="texture-preview"></div>
+                <div class="work-info">
+                    <h2 id="work-name">未命名作品</h2>
+                    
+                    <div class="info-item">
+                        <label>描述</label>
+                        <value id="work-description">暂无描述</value>
+                    </div>
+                    
+                    <div class="info-item">
+                        <label>创建时间</label>
+                        <value id="work-date">未知</value>
+                    </div>
+                    
+                    <div class="recipe-info">
+                        <h3>🎨 釉料配方</h3>
+                        <div class="ingredient-list" id="ingredients-list">
+                        </div>
+                    </div>
+                    
+                    <div class="firing-stats">
+                        <h3>🔥 烧制参数</h3>
+                        <div class="stat-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-temp">-</div>
+                                <div class="stat-label">最高温度</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-oxygen">-</div>
+                                <div class="stat-label">氧气含量</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-cooling">-</div>
+                                <div class="stat-label">冷却速率</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-rating">-</div>
+                                <div class="stat-label">窑变等级</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="window.location.href='/'">
+                    🎨 创作自己的作品
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>GlazeCraft: The Kiln Alchemy | 数字陶艺创作平台</p>
+            <p><a href="/">返回首页</a></p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const pathParts = window.location.pathname.split('/');
+            const workId = pathParts[pathParts.length - 1];
+            
+            if (workId && workId !== 'share') {
+                loadWork(workId);
+            } else {
+                showError('无效的作品链接');
+            }
+        });
+        
+        async function loadWork(workId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/share/${workId}`);
+                
+                if (!response.ok) {
+                    throw new Error('作品不存在');
+                }
+                
+                const work = await response.json();
+                displayWork(work);
+            } catch (error) {
+                console.error('加载作品失败:', error);
+                showError('作品加载失败: ' + error.message);
+            }
+        }
+        
+        function displayWork(work) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('work-content').style.display = 'block';
+            
+            if (work.texture_data) {
+                document.getElementById('texture-preview').style.backgroundImage = `url('${work.texture_data}')`;
+            }
+            
+            document.getElementById('work-name').textContent = work.name || '未命名作品';
+            document.getElementById('work-description').textContent = work.description || '暂无描述';
+            document.getElementById('work-date').textContent = work.created_at || '未知';
+            
+            const ingredients = work.glaze_recipe?.ingredients || {};
+            const ingredientsList = document.getElementById('ingredients-list');
+            ingredientsList.innerHTML = '';
+            
+            for (const [name, amount] of Object.entries(ingredients)) {
+                const tag = document.createElement('span');
+                tag.className = 'ingredient-tag';
+                tag.textContent = `${name}: ${amount}%`;
+                ingredientsList.appendChild(tag);
+            }
+            
+            const firingParams = work.firing_params || {};
+            const tempProfile = firingParams.temperature_profile || [];
+            const maxTemp = tempProfile.length > 0 ? Math.max(...tempProfile.map(([t, _]) => t)) : 0;
+            const oxygen = firingParams.oxygen_level || 21;
+            const cooling = firingParams.cooling_rate || 10;
+            
+            document.getElementById('stat-temp').textContent = `${Math.round(maxTemp)}°C`;
+            document.getElementById('stat-oxygen').textContent = `${oxygen}%`;
+            document.getElementById('stat-cooling').textContent = `${cooling}°C/分`;
+            
+            let rating = '普通';
+            let ratingColor = '#aaa';
+            if (maxTemp > 1250 && oxygen < 15 && cooling > 50) {
+                rating = '极品';
+            } else if (maxTemp > 1200 && (oxygen < 18 || cooling > 30)) {
+                rating = '优质';
+            } else if (maxTemp > 1100) {
+                rating = '正常';
+            }
+            document.getElementById('stat-rating').textContent = rating;
+        }
+        
+        function showError(message) {
+            document.getElementById('loading').innerHTML = `
+                <p style="color: #e74c3c; font-size: 1.2rem;">${message}</p>
+                <button class="btn btn-secondary" style="margin-top: 1rem;" onclick="window.location.href='/'">
+                    返回首页
+                </button>
+            `;
+        }
+    </script>
+</body>
+</html>

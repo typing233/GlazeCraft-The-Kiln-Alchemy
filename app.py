@@ -125,7 +125,11 @@ def generate_kiln_change_texture(firing_params, glaze_recipe, size=512):
     oxygen_level = firing_params.get('oxygen_level', 21)
     max_temp = max([t for t, _ in temp_profile]) if temp_profile else 1200
     
-    recipe_ingredients = json.loads(glaze_recipe.get('ingredients', '{}'))
+    ingredients_raw = glaze_recipe.get('ingredients', {})
+    if isinstance(ingredients_raw, str):
+        recipe_ingredients = json.loads(ingredients_raw)
+    else:
+        recipe_ingredients = ingredients_raw if ingredients_raw else {}
     
     img = Image.new('RGBA', (size, size), (200, 180, 150, 255))
     draw = ImageDraw.Draw(img)

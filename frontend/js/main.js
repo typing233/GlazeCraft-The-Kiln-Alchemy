@@ -1,8 +1,52 @@
 const API_BASE = '';
 
+const STORAGE_KEYS = {
+    USER_ID: 'glazecraft_user_id',
+    WORKS_BACKUP: 'glazecraft_works_backup'
+};
+
+function getOrCreateUserId() {
+    let userId = localStorage.getItem(STORAGE_KEYS.USER_ID);
+    if (!userId) {
+        userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem(STORAGE_KEYS.USER_ID, userId);
+        console.log('创建新用户ID:', userId);
+    } else {
+        console.log('使用已存在的用户ID:', userId);
+    }
+    return userId;
+}
+
+function getWorksFromStorage() {
+    const backup = localStorage.getItem(STORAGE_KEYS.WORKS_BACKUP);
+    if (backup) {
+        try {
+            return JSON.parse(backup);
+        } catch (e) {
+            console.error('解析备份作品失败:', e);
+        }
+    }
+    return [];
+}
+
+function saveWorksToStorage(works) {
+    try {
+        localStorage.setItem(STORAGE_KEYS.WORKS_BACKUP, JSON.stringify(works));
+        console.log('作品已备份到 localStorage');
+    } catch (e) {
+        console.error('备份作品失败:', e);
+    }
+}
+
+function addWorkToStorage(work) {
+    const works = getWorksFromStorage();
+    works.unshift(work);
+    saveWorksToStorage(works);
+}
+
 const appState = {
     currentStage: 'pottery',
-    userId: 'user_' + Math.random().toString(36).substr(2, 9),
+    userId: getOrCreateUserId(),
     meshData: null,
     selectedRecipe: null,
     currentIngredients: {},
@@ -25,6 +69,12 @@ let recipes = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('GlazeCraft: 窑变炼金术 启动中...');
+    console.log('当前用户ID:', appState.userId);
+    
+    const backupWorks = getWorksFromStorage();
+    if (backupWorks.length > 0) {
+        console.log('从 localStorage 恢复备份作品:', backupWorks.length);
+    }
     
     await loadRecipes();
     setupNavigation();
@@ -325,14 +375,48 @@ function setupEventListeners() {
 }
 
 async function loadUserWorks() {
+    let serverWorks = [];
+    let localWorks = getWorksFromStorage();
+    
     try {
         const response = await fetch(`${API_BASE}/api/works/user/${appState.userId}`);
-        appState.works = await response.json();
-        renderGallery();
+        if (response.ok) {
+            serverWorks = await response.json();
+            console.log('从服务器加载作品:', serverWorks.length);
+        }
     } catch (error) {
-        console.error('加载作品失败:', error);
-        renderGallery();
+        console.error('从服务器加载作品失败:', error);
     }
+    
+    const allWorksMap = new Map();
+    
+    for (const work of serverWorks) {
+        allWorksMap.set(work.id, work);
+    }
+    
+    for (const work of localWorks) {
+        if (!allWorksMap.has(work.id)) {
+            allWorksMap.set(work.id, work);
+        }
+    }
+    
+    const allWorks = Array.from(allWorksMap.values());
+    
+    allWorks.sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateB - dateA;
+    });
+    
+    appState.works = allWorks;
+    
+    if (serverWorks.length > 0 && localWorks.length > 0) {
+        saveWorksToStorage(allWorks);
+        console.log('合并并同步了服务器和本地作品');
+    }
+    
+    console.log('最终作品列表:', appState.works.length);
+    renderGallery();
 }
 
 function renderGallery() {
@@ -658,15 +742,30 @@ async function saveCurrentWork() {
     const workName = document.getElementById('work-name').value || '未命名作品';
     const workDesc = document.getElementById('work-description').value || '';
     
+    const now = new Date();
+    const workId = 'work_' + now.getTime();
+    const createdAt = now.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
     const workData = {
+        id: workId,
         user_id: appState.userId,
         name: workName,
         description: workDesc,
         mesh_data: appState.meshData || {},
         glaze_recipe: appState.selectedRecipe || {},
         firing_params: appState.firingParams,
-        texture_data: appState.generatedTexture
+        texture_data: appState.generatedTexture,
+        created_at: createdAt
     };
+    
+    let saveSuccess = false;
+    let serverSaved = false;
     
     try {
         const response = await fetch(`${API_BASE}/api/works`, {
@@ -680,13 +779,25 @@ async function saveCurrentWork() {
         const result = await response.json();
         
         if (result.success) {
-            alert('作品已保存到图鉴！');
-            document.getElementById('result-modal').classList.remove('show');
-            switchStage('gallery');
+            serverSaved = true;
+            saveSuccess = true;
         }
     } catch (error) {
-        console.error('保存作品失败:', error);
-        alert('作品保存成功（本地模式）！');
+        console.error('保存到服务器失败:', error);
+    }
+    
+    addWorkToStorage(workData);
+    saveSuccess = true;
+    
+    if (saveSuccess) {
+        if (serverSaved) {
+            alert('✅ 作品已保存到图鉴！（服务器 + 本地双重备份）');
+        } else {
+            alert('✅ 作品已保存到本地图鉴！');
+        }
         document.getElementById('result-modal').classList.remove('show');
+        switchStage('gallery');
+    } else {
+        alert('❌ 作品保存失败，请重试');
     }
 }

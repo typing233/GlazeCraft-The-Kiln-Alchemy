@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GlazeCraft: 窑变炼金术</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>🏺 GlazeCraft: 窑变炼金术</h1>
+            <nav>
+                <button id="nav-pottery" class="nav-btn active">拉坯塑形</button>
+                <button id="nav-glaze" class="nav-btn">釉料配方</button>
+                <button id="nav-firing" class="nav-btn">烧制过程</button>
+                <button id="nav-gallery" class="nav-btn">我的图鉴</button>
+            </nav>
+        </header>
+
+        <main>
+            <section id="pottery-stage" class="stage active">
+                <div class="stage-container">
+                    <div class="canvas-container">
+                        <canvas id="pottery-canvas"></canvas>
+                        <div class="controls">
+                            <button id="start-wheel" class="control-btn">🎡 启动转轮</button>
+                            <button id="stop-wheel" class="control-btn">⏹ 停止转轮</button>
+                            <button id="reset-pottery" class="control-btn">🔄 重置</button>
+                            <div class="tool-selector">
+                                <label>工具选择:</label>
+                                <select id="pottery-tool">
+                                    <option value="pull">拉坯</option>
+                                    <option value="push">推压</option>
+                                    <option value="pinch">捏塑</option>
+                                    <option value="smooth">光滑</option>
+                                </select>
+                            </div>
+                            <div class="speed-control">
+                                <label>转轮速度:</label>
+                                <input type="range" id="wheel-speed" min="0" max="100" value="50">
+                                <span id="speed-value">50%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-panel">
+                        <h3>拉坯技巧提示</h3>
+                        <p>🖱️ 鼠标左键在3D模型上拖动来塑造形状</p>
+                        <p>📐 工具说明：</p>
+                        <ul>
+                            <li><strong>拉坯</strong>: 向外扩展器壁</li>
+                            <li><strong>推压</strong>: 向内收缩器壁</li>
+                            <li><strong>捏塑</strong>: 塑造口沿细节</li>
+                            <li><strong>光滑</strong>: 平整表面</li>
+                        </ul>
+                        <button id="next-to-glaze" class="next-btn">下一步: 调配釉料 →</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="glaze-stage" class="stage">
+                <div class="stage-container">
+                    <div class="recipe-puzzle">
+                        <h3>📜 古籍配方解谜</h3>
+                        <div class="recipe-list">
+                            <h4>选择配方:</h4>
+                            <div id="recipes-container"></div>
+                        </div>
+                        <div class="mixing-station">
+                            <h4>🎨 原料调配</h4>
+                            <div id="ingredients-container"></div>
+                            <div class="recipe-check">
+                                <button id="check-recipe" class="control-btn">✅ 验证配方</button>
+                                <div id="recipe-result" class="result-text"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-panel">
+                        <h3>釉料配方说明</h3>
+                        <div id="recipe-details">
+                            <p>请选择一个配方开始调配</p>
+                        </div>
+                        <div class="preview-container">
+                            <h4>釉色预览</h4>
+                            <div id="glaze-preview" class="preview-box"></div>
+                        </div>
+                        <div class="navigation-buttons">
+                            <button id="back-to-pottery" class="back-btn">← 返回拉坯</button>
+                            <button id="next-to-firing" class="next-btn">下一步: 入窑烧制 →</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="firing-stage" class="stage">
+                <div class="stage-container">
+                    <div class="kiln-control">
+                        <h3>🔥 窑炉控制中心</h3>
+                        <div class="temperature-display">
+                            <div id="temp-value" class="temp-number">20°C</div>
+                            <div id="temp-status" class="temp-status">待机中</div>
+                        </div>
+                        <div class="temperature-chart">
+                            <canvas id="temp-chart" width="400" height="200"></canvas>
+                        </div>
+                        <div class="control-panel">
+                            <div class="control-group">
+                                <label>🔥 升温速率 (°C/分钟):</label>
+                                <input type="range" id="heat-rate" min="0" max="20" value="5">
+                                <span id="heat-rate-value">5°C/分钟</span>
+                            </div>
+                            <div class="control-group">
+                                <label>💨 氧气含量 (%):</label>
+                                <input type="range" id="oxygen-level" min="0" max="21" value="21">
+                                <span id="oxygen-value">21%</span>
+                                <small class="hint">氧化焰 > 15%, 还原焰 < 10%</small>
+                            </div>
+                            <div class="control-group">
+                                <label>❄️ 冷却速率 (°C/分钟):</label>
+                                <input type="range" id="cool-rate" min="1" max="50" value="10">
+                                <span id="cool-rate-value">10°C/分钟</span>
+                            </div>
+                        </div>
+                        <div class="kiln-buttons">
+                            <button id="start-firing" class="control-btn primary">🔥 开始烧制</button>
+                            <button id="hold-temperature" class="control-btn">⏸ 保温</button>
+                            <button id="start-cooling" class="control-btn">❄️ 开始冷却</button>
+                            <button id="stop-firing" class="control-btn danger">⏹ 紧急停止</button>
+                        </div>
+                    </div>
+                    <div class="info-panel">
+                        <h3>烧制工艺说明</h3>
+                        <div class="firing-guide">
+                            <p><strong>烧制阶段：</strong></p>
+                            <ol>
+                                <li><strong>升温期</strong>: 缓慢升温排除水分</li>
+                                <li><strong>氧化期</strong>: 充分氧化有机物</li>
+                                <li><strong>还原期</strong>: (可选) 形成特殊釉色</li>
+                                <li><strong>高温保温</strong>: 釉料充分熔融</li>
+                                <li><strong>冷却期</strong>: 控制速度形成结晶</li>
+                            </ol>
+                        </div>
+                        <div class="firing-status">
+                            <h4>当前状态:</h4>
+                            <div id="firing-phase">待机中</div>
+                            <div id="firing-time">时间: 0分钟</div>
+                        </div>
+                        <div class="navigation-buttons">
+                            <button id="back-to-glaze" class="back-btn">← 返回釉料</button>
+                            <button id="finish-firing" class="next-btn" disabled>完成烧制 →</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="gallery-stage" class="stage">
+                <div class="stage-container">
+                    <div class="gallery-container">
+                        <h3>📚 我的数字图鉴</h3>
+                        <div id="gallery-grid" class="gallery-grid">
+                            <p class="empty-gallery">还没有作品，快去创作一件吧！</p>
+                        </div>
+                    </div>
+                    <div class="work-details">
+                        <h3>作品详情</h3>
+                        <div id="work-info" class="work-info-panel">
+                            <p>选择一件作品查看详情</p>
+                        </div>
+                        <div class="share-section">
+                            <button id="share-work" class="control-btn" disabled>🔗 生成分享链接</button>
+                            <div id="share-link" class="share-link-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div id="result-modal" class="modal">
+            <div class="modal-content">
+                <h2>🎉 作品完成！</h2>
+                <div class="result-preview">
+                    <div id="result-texture" class="result-image"></div>
+                    <div class="result-stats">
+                        <h4>窑变统计</h4>
+                        <div id="result-stats-content"></div>
+                    </div>
+                </div>
+                <div class="result-form">
+                    <input type="text" id="work-name" placeholder="为作品命名..." class="name-input">
+                    <textarea id="work-description" placeholder="描述这件作品的故事..." class="desc-input"></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button id="save-work" class="control-btn primary">💾 保存到图鉴</button>
+                    <button id="close-modal" class="control-btn">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/pottery-editor.js"></script>
+    <script src="js/firing-system.js"></script>
+    <script src="js/gallery.js"></script>
+</body>
+</html>

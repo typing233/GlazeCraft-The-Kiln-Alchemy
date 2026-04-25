@@ -129,26 +129,36 @@ function runFiringLoop() {
     const heatRate = parseInt(document.getElementById('heat-rate')?.value || 5);
     const coolRate = parseInt(document.getElementById('cool-rate')?.value || 10);
     
+    const speedMultiplier = 10;
+    
     if (isHeating) {
-        appState.firingParams.current_temperature += heatRate * (deltaTime / 60);
+        appState.firingParams.current_temperature += heatRate * (deltaTime / 60) * speedMultiplier;
         appState.firingParams.current_temperature = Math.min(1400, appState.firingParams.current_temperature);
         
-        if (appState.firingParams.current_temperature < 300) {
-            appState.firingPhase = '低温脱水';
+        if (appState.firingParams.current_temperature < 100) {
+            appState.firingPhase = '低温预热';
+        } else if (appState.firingParams.current_temperature < 300) {
+            appState.firingPhase = '水分蒸发';
         } else if (appState.firingParams.current_temperature < 600) {
-            appState.firingPhase = '氧化期';
-        } else if (appState.firingParams.current_temperature < 1000) {
-            appState.firingPhase = '高温升温';
+            appState.firingPhase = '氧化期中';
+        } else if (appState.firingParams.current_temperature < 900) {
+            appState.firingPhase = '中温烧成';
+        } else if (appState.firingParams.current_temperature < 1200) {
+            appState.firingPhase = '高温烧成';
         } else {
-            appState.firingPhase = '烧成温度';
+            appState.firingPhase = '超高还原';
         }
     } else if (isCooling) {
-        appState.firingParams.current_temperature -= coolRate * (deltaTime / 60);
+        appState.firingParams.current_temperature -= coolRate * (deltaTime / 60) * speedMultiplier;
         appState.firingParams.current_temperature = Math.max(20, appState.firingParams.current_temperature);
+        
+        appState.firingPhase = '冷却降温';
         
         if (appState.firingParams.current_temperature < 100) {
             stopFiring();
         }
+    } else if (isHolding) {
+        appState.firingPhase = '保温阶段';
     }
     
     const elapsed = Math.floor((now - appState.firingStartTime) / 1000);
@@ -173,26 +183,53 @@ function updateFiringDisplay() {
     }
     
     const temp = appState.firingParams.current_temperature;
-    if (temp < 300) {
-        if (tempStatus) {
-            tempStatus.textContent = '低温阶段';
-            tempStatus.style.color = '#aaa';
-        }
-    } else if (temp < 600) {
-        if (tempStatus) {
-            tempStatus.textContent = '升温中...';
-            tempStatus.style.color = '#feca57';
-        }
-    } else if (temp < 1000) {
-        if (tempStatus) {
-            tempStatus.textContent = '氧化焰阶段';
-            tempStatus.style.color = '#ff6b6b';
-        }
+    
+    let modeText = '';
+    let modeColor = '';
+    
+    if (isHeating) {
+        modeText = '🔥 加热中';
+        modeColor = '#ff6b6b';
+    } else if (isCooling) {
+        modeText = '❄️ 冷却中';
+        modeColor = '#74b9ff';
+    } else if (isHolding) {
+        modeText = '⏸ 保温中';
+        modeColor = '#feca57';
+    } else if (appState.firingActive) {
+        modeText = '⚡ 运行中';
+        modeColor = '#aaa';
     } else {
-        if (tempStatus) {
-            tempStatus.textContent = '高温还原焰';
-            tempStatus.style.color = '#e94560';
-        }
+        modeText = '⭕ 待机中';
+        modeColor = '#666';
+    }
+    
+    let tempStageText = '';
+    let tempStageColor = '';
+    
+    if (temp < 100) {
+        tempStageText = '低温预热';
+        tempStageColor = '#888';
+    } else if (temp < 300) {
+        tempStageText = '水分蒸发';
+        tempStageColor = '#aaa';
+    } else if (temp < 600) {
+        tempStageText = '氧化期';
+        tempStageColor = '#feca57';
+    } else if (temp < 900) {
+        tempStageText = '中温烧成';
+        tempStageColor = '#ff8c42';
+    } else if (temp < 1200) {
+        tempStageText = '高温烧成';
+        tempStageColor = '#ff6b6b';
+    } else {
+        tempStageText = '超高还原';
+        tempStageColor = '#e94560';
+    }
+    
+    if (tempStatus) {
+        tempStatus.textContent = `${modeText} - ${tempStageText}`;
+        tempStatus.style.color = modeColor;
     }
     
     if (firingPhase) {
